@@ -2,6 +2,14 @@ import {Request, Response} from "express";
 import { getRepository, createQueryBuilder } from "typeorm";
 import { Task } from "../entity/Task";
 
+/*
+--Create task function--
+body request example
+{
+    "description":"description task ",
+    "deadline_at":"2022-02-25T23:18:19.063Z"
+}
+*/
 export const createTask = async (req: Request, res: Response) => {
 
     let task = new Task();
@@ -13,6 +21,11 @@ export const createTask = async (req: Request, res: Response) => {
     res.send(task);
 }
 
+/*
+--Get tasks function--
+url example
+localhost:3000/tasks/currentPage/tasksPerPage
+*/
 export const getTasks = async (req: Request, res: Response) => {
     
     let skip = (Number(req.params.currentPage) - 1) * Number(req.params.tasksPerPage);
@@ -33,6 +46,11 @@ export const getTasks = async (req: Request, res: Response) => {
    
 }
 
+/*
+--Update task(description and deadline_at) function--
+must have in the body on the request values 
+of description and deadline_at
+*/
 export const updateTask = async (req: Request, res: Response) => {
     const {description, deadline_at} = req.body;
 
@@ -60,6 +78,9 @@ export const updateTask = async (req: Request, res: Response) => {
 
 }
 
+/*
+--End task function--
+*/
 export const endTask = async (req: Request, res: Response) => {
 
     const taskRepository = getRepository(Task);
@@ -86,6 +107,9 @@ export const endTask = async (req: Request, res: Response) => {
     res.send(`task finished at ${endedTaskResult.finished_at}`);
 }
 
+/*
+--Delete task function--
+*/
 export const deleteTask = async (req: Request, res: Response) => {
 
     const taskRepository = getRepository(Task);

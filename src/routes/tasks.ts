@@ -9,10 +9,12 @@ import {
 
 const router: Router = express.Router();
 
-router.get('/:currentPage/:tasksPerPage', getTasks);
-router.post('/', createTask);
-router.put('/:id', updateTask);
-router.put('/end/:id', endTask); 
-router.delete('/:id', deleteTask);
+//baseurl = localhost:3000/tasks
+
+router.get('/:currentPage/:tasksPerPage', getTasks); //(get) baseurl/currentPage/tasksPerPage
+router.post('/', createTask); //(post) baseurl/
+router.put('/:id', updateTask); // (put) baseurl/id
+router.put('/end/:id', endTask);  // (put) baseurl/end/id
+router.delete('/:id', deleteTask); // (delete) baseurl/id
 
 export default router;
