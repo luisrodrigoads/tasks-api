@@ -1,5 +1,5 @@
 import {Request, Response} from "express";
-import { getRepository } from "typeorm";
+import { getRepository, createQueryBuilder } from "typeorm";
 import { Task } from "../entity/Task";
 
 export const createTask = async (req: Request, res: Response) => {
@@ -13,14 +13,20 @@ export const createTask = async (req: Request, res: Response) => {
     res.send(task);
 }
 
-export const getAllTasks = async (req: Request, res: Response) => {
-
+export const getTasks = async (req: Request, res: Response) => {
+    
+    let skip = (Number(req.params.currentPage) - 1) * Number(req.params.tasksPerPage);
+   
     const taskRepository = getRepository(Task);
 
-    const tasks = await taskRepository.find();
+    const tasks = await taskRepository
+        .createQueryBuilder("task")
+        .skip(Number(skip))
+        .take(Number(req.params.tasksPerPage))
+        .getMany();
 
     if(!tasks){
-        res.send('Nao há dados cadastrados');
+        res.send('Nao há tarefas cadastrados');
     } else {
         res.send(tasks);
     } 
@@ -37,7 +43,8 @@ export const updateTask = async (req: Request, res: Response) => {
     });
 
     if(currentTask.isFinished){
-        res.send('A tarefa esta concluida, portanto não pode ser alterada');
+        res.send('task is ended, cannot be changed');
+
     }else{
         await taskRepository.update(Number(req.params.id), {
             description,
@@ -76,7 +83,7 @@ export const endTask = async (req: Request, res: Response) => {
         id: Number(req.params.id)
     })
 
-    res.send(`tarefa finalizada em ${endedTaskResult.finished_at}`);
+    res.send(`task finished at ${endedTaskResult.finished_at}`);
 }
 
 export const deleteTask = async (req: Request, res: Response) => {

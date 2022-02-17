@@ -3,13 +3,13 @@ import {
     createTask, 
     deleteTask, 
     endTask, 
-    getAllTasks, 
+    getTasks, 
     updateTask 
 } from "../controllers/tasks";
 
 const router: Router = express.Router();
 
-router.get('/', getAllTasks);
+router.get('/:currentPage/:tasksPerPage', getTasks);
 router.post('/', createTask);
 router.put('/:id', updateTask);
 router.put('/end/:id', endTask); 
