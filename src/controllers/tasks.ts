@@ -1,5 +1,6 @@
 import {Request, Response} from "express";
-import { getRepository, createQueryBuilder } from "typeorm";
+import moment from "moment";
+import { getRepository, getConnection,  } from "typeorm";
 import { Task } from "../entity/Task";
 
 /*
@@ -7,7 +8,7 @@ import { Task } from "../entity/Task";
 body request example
 {
     "description":"description task ",
-    "deadline_at":"2022-02-25T23:18:19.063Z"
+    "deadline_at":"2022-02-25T23:18:19"
 }
 */
 export const createTask = async (req: Request, res: Response) => {
@@ -15,6 +16,8 @@ export const createTask = async (req: Request, res: Response) => {
     let task = new Task();
     task = {...req.body};
 
+    task.created_at =  new Date();
+    
     const taskRepository = getRepository(Task);
     
     await taskRepository.save(task);
@@ -32,6 +35,15 @@ export const getTasks = async (req: Request, res: Response) => {
    
     const taskRepository = getRepository(Task);
 
+    // verify if task is late
+    await getConnection()
+        .createQueryBuilder()
+        .update(Task)
+        .set({isLate: true})
+        .where("deadline_at < :date",{date: moment().format('YYYY-MM-DD HH:mm:ss')})
+        .execute();
+
+    // show tasks
     const tasks = await taskRepository
         .createQueryBuilder("task")
         .skip(Number(skip))
