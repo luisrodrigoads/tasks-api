@@ -95,11 +95,25 @@ export const updateTask = async (req: Request, res: Response) => {
     
         }else{
 
-            await taskRepository.update(Number(id), {
-                description,
-                deadlineAt
-            });
-        
+            const today = moment().format('YYYY-MM-DD HH:mm:ss')
+            const isLate = false;
+
+            if(deadlineAt > today){
+
+                await taskRepository.update(Number(id), {
+                    description,
+                    deadlineAt,
+                    isLate
+                });
+            
+            } else {
+                
+                await taskRepository.update(Number(id), {
+                    description,
+                    deadlineAt
+                });
+            }
+
             const updatedTask = await taskRepository.find({
                 id: Number(id)
             });

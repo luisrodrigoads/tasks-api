@@ -3,9 +3,6 @@ import * as bodyParser from "body-parser";
 import { createConnection } from "typeorm";
 import taskRouter from "./routes/tasks";
 
-import * as dotenv from "dotenv";
-dotenv.config();
-
 createConnection().then((connection) => {
 
     const app: Application = express();
