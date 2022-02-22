@@ -1,6 +1,6 @@
 import {Request, Response} from "express";
 import moment from "moment";
-import { getRepository, getConnection,  } from "typeorm";
+import { getRepository, getConnection } from "typeorm";
 import { Task } from "../entity/Task";
 
 /*
@@ -8,7 +8,7 @@ import { Task } from "../entity/Task";
 body request example
 {
     "description":"description task ",
-    "deadline_at":"2022-02-25T23:18:19"
+    "deadlineAt":"2022-02-25T23:18:19"
 }
 */
 export const createTask = async (req: Request, res: Response) => {
@@ -16,7 +16,7 @@ export const createTask = async (req: Request, res: Response) => {
     let task = new Task();
     task = {...req.body};
 
-    task.created_at =  new Date();
+    task.createdAt =  new Date();
     
     const taskRepository = getRepository(Task);
     
@@ -30,31 +30,46 @@ url example
 localhost:3000/tasks/currentPage/tasksPerPage
 */
 export const getTasks = async (req: Request, res: Response) => {
+
+    const { currentPage,tasksPerPage } = req.params;
     
-    let skip = (Number(req.params.currentPage) - 1) * Number(req.params.tasksPerPage);
+    let skip = (Number(currentPage) - 1) * Number(tasksPerPage);
    
     const taskRepository = getRepository(Task);
+    const today = moment().format('YYYY-MM-DD HH:mm:ss')
 
-    // verify if task is late
-    await getConnection()
-        .createQueryBuilder()
-        .update(Task)
-        .set({isLate: true})
-        .where("deadline_at < :date",{date: moment().format('YYYY-MM-DD HH:mm:ss')})
-        .execute();
+    try {
+        // verify if task is late
+        await getConnection()
+            .createQueryBuilder()
+            .update(Task)
+            .set({isLate: true})
+            .where("deadlineAt < :today AND isFinished = :isFinished",{today: today , isFinished: false})
+            .execute();
 
-    // show tasks
+    } catch (error) {
+        res.status(400).send({error: error})
+    }
+
+    try {
+        // show tasks
     const tasks = await taskRepository
         .createQueryBuilder("task")
         .skip(Number(skip))
-        .take(Number(req.params.tasksPerPage))
+        .take(Number(tasksPerPage))
         .getMany();
 
-    if(!tasks){
-        res.send('Nao há tarefas cadastrados');
-    } else {
-        res.send(tasks);
-    } 
+        if(!tasks){
+            res.status(200).send({message: 'There are no tasks registered'});
+        } else {
+            res.status(200).send(tasks);
+        } 
+        
+    } catch (error) {
+        res.status(400).send({error: error});
+    }
+
+    
    
 }
 
@@ -64,28 +79,36 @@ must have in the body on the request values
 of description and deadline_at
 */
 export const updateTask = async (req: Request, res: Response) => {
-    const {description, deadline_at} = req.body;
+    const {description, deadlineAt} = req.body;
+    const {id} = req.params;
 
     const taskRepository = getRepository(Task);
 
-    const currentTask = await taskRepository.findOne({
-        id: Number(req.params.id)
-    });
+    try {
 
-    if(currentTask.isFinished){
-        res.send('task is ended, cannot be changed');
-
-    }else{
-        await taskRepository.update(Number(req.params.id), {
-            description,
-            deadline_at
+        const currentTask = await taskRepository.findOne({
+            id: Number(id)
         });
     
-        const updatedTask = await taskRepository.find({
-            id: Number(req.params.id)
-        });
+        if(currentTask.isFinished){
+            res.status(400).send({message: 'task is ended, cannot be changed'});
     
-        res.send(updatedTask);
+        }else{
+
+            await taskRepository.update(Number(id), {
+                description,
+                deadlineAt
+            });
+        
+            const updatedTask = await taskRepository.find({
+                id: Number(id)
+            });
+        
+            res.status(200).send(updatedTask);
+        }
+
+    } catch (error) {
+        res.status(400).send({error: error})
     }
 
 }
@@ -96,27 +119,37 @@ export const updateTask = async (req: Request, res: Response) => {
 export const endTask = async (req: Request, res: Response) => {
 
     const taskRepository = getRepository(Task);
+    const {id} = req.params;
 
-    var isFinished = true;
+    const isFinished = true;
+    const isLate = false;
 
-    await taskRepository.update(Number(req.params.id), {
-        isFinished
-    })
+    try {
 
-    const endedTask = await taskRepository.findOne({
-        id: Number(req.params.id)
-    })
+        await taskRepository.update(Number(id), {
+            isFinished,
+            isLate
+        })
+    
+        const endedTask = await taskRepository.findOne({
+            id: Number(id)
+        })
+    
+        const finishedAt = endedTask.updatedAt;
+        await taskRepository.update(Number(id), {
+           finishedAt
+        })
+    
+        const endedTaskResult = await taskRepository.findOne({
+            id: Number(id)
+        })
+    
+        res.status(200).send({message: `task finished at ${endedTaskResult.finishedAt}`}); 
 
-    var finished_at = endedTask.updated_at;
-    await taskRepository.update(Number(req.params.id), {
-       finished_at
-    })
+    } catch (error) {
+        res.status(400).send({error: error})
+    }
 
-    const endedTaskResult = await taskRepository.findOne({
-        id: Number(req.params.id)
-    })
-
-    res.send(`task finished at ${endedTaskResult.finished_at}`);
 }
 
 /*
@@ -125,12 +158,24 @@ export const endTask = async (req: Request, res: Response) => {
 export const deleteTask = async (req: Request, res: Response) => {
 
     const taskRepository = getRepository(Task);
+    const {id} = req.params;
 
-    const task = await taskRepository.find({
-        id: Number(req.params.id)
-    })
+    try {
 
-    await taskRepository.remove(task);
+        const task = await taskRepository.find({
+            id: Number(id)
+        })
 
-    res.send(`task id ${req.params.id} has been deleted.`);
+        console.log(task);
+        if(task.length === 0)
+            res.status(400).send({message: 'Task not exists'})
+    
+        await taskRepository.remove(task);
+    
+        res.status(200).send({message:`task with id ${id} has been deleted.`});
+
+    } catch (error) {
+        res.status(400).send({error: error})
+    }
+
 }

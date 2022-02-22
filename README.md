@@ -47,7 +47,7 @@ API responsible for managing a user's task list.
 ```json
 {
     "description":"description task example",
-    "deadline_at":"2022-02-25T23:18:19.063Z"
+    "deadline_at":"2022-02-25T23:18:19"
 }
 ```
 - PUT `localhost:3000/tasks/:id`, update task (deadline_at and/or description).

@@ -1,5 +1,11 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, Timestamp, UpdateDateColumn } from "typeorm";
-import moment from "moment";
+import { 
+    Column, 
+    CreateDateColumn, 
+    Entity, 
+    PrimaryGeneratedColumn, 
+    Timestamp, 
+    UpdateDateColumn 
+    } from "typeorm";
 
 @Entity()
 export class Task {
@@ -10,16 +16,16 @@ export class Task {
     description: string;
 
     @CreateDateColumn({type: "timestamp"})
-    created_at: Date;
+    createdAt: Date;
 
     @Column({type:"timestamp",nullable: true})
-    deadline_at: Timestamp;
+    deadlineAt: Timestamp;
 
     @Column({type:"timestamp", nullable: true})
-    finished_at: Timestamp;
+    finishedAt: Timestamp;
 
     @UpdateDateColumn({type: "timestamp",nullable: true})
-    updated_at:Timestamp;
+    updatedAt:Timestamp;
 
     @Column({default: false})
     isFinished: boolean;

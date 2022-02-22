@@ -4,7 +4,6 @@ import { createConnection } from "typeorm";
 import taskRouter from "./routes/tasks";
 
 import * as dotenv from "dotenv";
-
 dotenv.config();
 
 createConnection().then((connection) => {
@@ -15,6 +14,6 @@ createConnection().then((connection) => {
     app.use('/tasks', taskRouter); 
    
     app.listen(3000,()=>{
-        console.log("Server is running");
+        console.log(`Server is running`);
     });
 });
