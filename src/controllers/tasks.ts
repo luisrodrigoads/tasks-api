@@ -2,6 +2,8 @@ import {Request, Response} from "express";
 import moment from "moment";
 import { getRepository, getConnection } from "typeorm";
 import { Task } from "../entity/Task";
+import joi from "joi";
+import { createOrUpdateTaskData } from "./validDataRequest";
 
 /*
 --Create task function--
@@ -14,14 +16,20 @@ body request example
 export const createTask = async (req: Request, res: Response) => {
 
     let task = new Task();
-    task = {...req.body};
 
-    task.createdAt =  new Date();
-    
-    const taskRepository = getRepository(Task);
-    
-    await taskRepository.save(task);
-    res.send(task);
+    const {error, value} = createOrUpdateTaskData.validate(req.body);
+    if(error){
+        res.status(400).send({error: error.details[0].message});
+    }else{
+        task = {...req.body};
+
+        task.createdAt =  new Date();
+        
+        const taskRepository = getRepository(Task);
+        
+        await taskRepository.save(task);
+        res.status(200).send(task);
+    }
 }
 
 /*
@@ -86,41 +94,49 @@ export const updateTask = async (req: Request, res: Response) => {
 
     try {
 
-        const currentTask = await taskRepository.findOne({
-            id: Number(id)
-        });
-    
-        if(currentTask.isFinished){
-            res.status(400).send({message: 'task is ended, cannot be changed'});
-    
-        }else{
-
-            const today = moment().format('YYYY-MM-DD HH:mm:ss')
-            const isLate = false;
-
-            if(deadlineAt > today){
-
-                await taskRepository.update(Number(id), {
-                    description,
-                    deadlineAt,
-                    isLate
-                });
-            
-            } else {
-                
-                await taskRepository.update(Number(id), {
-                    description,
-                    deadlineAt
-                });
-            }
-
-            const updatedTask = await taskRepository.find({
+            const currentTask = await taskRepository.findOne({
                 id: Number(id)
             });
         
-            res.status(200).send(updatedTask);
-        }
+            if(currentTask.isFinished){
+                res.status(400).send({message: 'task is ended, cannot be changed'});
+        
+            }else{
+    
+                const today = moment().format('YYYY-MM-DD HH:mm:ss')
+                const isLate = false;
 
+                const {error, value} = createOrUpdateTaskData.validate(req.body);
+
+                if(error){
+                    res.status(400).send({error: error.details[0].message});
+                }else{
+        
+                    if(deadlineAt > today){
+        
+                        await taskRepository.update(Number(id), {
+                            description,
+                            deadlineAt,
+                            isLate
+                        });
+                    
+                    } else {
+        
+                        await taskRepository.update(Number(id), {
+                            description,
+                            deadlineAt
+                        });
+                    }
+    
+                    const updatedTask = await taskRepository.find({
+                        id: Number(id)
+                    });
+                
+                    res.status(200).send(updatedTask);
+
+                }
+            }
+        
     } catch (error) {
         res.status(400).send({error: error})
     }
